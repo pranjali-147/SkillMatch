@@ -1,0 +1,40 @@
+[
+    {
+        "id": 1,
+        "title": "Data Scientist",
+        "description": "We are looking for a Data Scientist with experience in Python, machine learning, statistics, and data analysis.",
+        "required_skills": [
+            "Python",
+            "Machine Learning",
+            "Statistics",
+            "Pandas",
+            "NumPy",
+            "SQL"
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Frontend Developer",
+        "description": "Frontend developer skilled in React, JavaScript, HTML, CSS, and modern UI frameworks.",
+        "required_skills": [
+            "React",
+            "JavaScript",
+            "HTML",
+            "CSS",
+            "Tailwind",
+            "Material UI"
+        ]
+    },
+    {
+        "id": 3,
+        "title": "Backend Engineer",
+        "description": "Backend engineer with experience in Flask, APIs, databases, and server-side logic.",
+        "required_skills": [
+            "Python",
+            "Flask",
+            "REST API",
+            "SQL",
+            "MongoDB"
+        ]
+    }
+]

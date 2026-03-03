@@ -1,0 +1,2 @@
+Experienced in Machine Learning and Python development.
+Worked on Pandas and NumPy libraries 
