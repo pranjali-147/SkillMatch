@@ -17,15 +17,15 @@ EMBEDDING_PATH = os.path.join(
     "glove.2024.wikigiga.50d.txt"
 )
 
-print("Loading GloVe 50d model locally...")
+# print("Loading GloVe 50d model locally...")
 
-model = KeyedVectors.load_word2vec_format(
-    EMBEDDING_PATH,
-    binary=False,
-    no_header=True
-)
+# model = KeyedVectors.load_word2vec_format(
+#     EMBEDDING_PATH,
+#     binary=False,
+#     no_header=True
+# )
 
-print("Model loaded successfully!")
+# print("Model loaded successfully!")
 
 
 # ------------------------------
@@ -97,6 +97,7 @@ def calculate_similarity(jd_text, resume_text, required_skills):
         skill_score = (len(matched_skills) / len(required_skills_lower)) * 100
     else:
         skill_score = 0
+
 
     # ===== 3️⃣ Final Weighted Score =====
     final_score = (0.6 * skill_score) + (0.4 * semantic_score)

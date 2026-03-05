@@ -12,6 +12,11 @@ USERS = {
         "password": "1234",
         "role": "student"
     }
+    ,
+    "student2@test.com": {
+        "password": "1234",
+        "role": "student"
+    }
 }
 
 @auth_bp.route("/login", methods=["POST"])

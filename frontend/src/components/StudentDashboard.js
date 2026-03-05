@@ -32,7 +32,24 @@ function StudentDashboard({ onLogout }) {
       .then((res) => res.json())
       .then((data) => setJds(data));
   }, []);
+  const handleSendToHR = async (event, jdId) => {
+    const files = event.target.files;
+    const formData = new FormData();
 
+    for (let file of files) {
+      formData.append("resumes", file);
+    }
+
+    const res = await fetch(`http://127.0.0.1:5000/send-to-hr/${jdId}`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+
+    const data = await res.json();
+
+    alert(data.message || "Resume sent to HR");
+  };
   const handleUpload = async (event, jdId) => {
     const files = event.target.files;
     const formData = new FormData();
@@ -264,24 +281,51 @@ function StudentDashboard({ onLogout }) {
 
                     {/* Upload Button */}
                     <Box>
-                      <Button
-                        variant="contained"
-                        component="label"
-                        startIcon={<SchoolIcon />}
-                        sx={{
-                          bgcolor: "#1e3c72",
-                          "&:hover": { bgcolor: "#2a5298" },
-                          fontSize: "0.95rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        Upload Your Resume
-                        <input
-                          type="file"
-                          hidden
-                          onChange={(e) => handleUpload(e, jd.id)}
-                        />
-                      </Button>
+                      <Stack direction="row" spacing={2}>
+                        {/* Self Evaluate */}
+                        <Button
+                          variant="contained"
+                          component="label"
+                          startIcon={<SchoolIcon />}
+                          sx={{
+                            bgcolor: "#1e3c72",
+                            "&:hover": { bgcolor: "#2a5298" },
+                            fontSize: "0.9rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          Self Evaluate
+                          <input
+                            type="file"
+                            hidden
+                            onChange={(e) => handleUpload(e, jd.id)}
+                          />
+                        </Button>
+
+                        {/* Send to HR */}
+                        <Button
+                          variant="outlined"
+                          component="label"
+                          startIcon={<WorkIcon />}
+                          sx={{
+                            borderColor: "#1e3c72",
+                            color: "#1e3c72",
+                            fontSize: "0.9rem",
+                            fontWeight: 600,
+                            "&:hover": {
+                              borderColor: "#2a5298",
+                              bgcolor: "#f0f4ff",
+                            },
+                          }}
+                        >
+                          Send to HR
+                          <input
+                            type="file"
+                            hidden
+                            onChange={(e) => handleSendToHR(e, jd.id)}
+                          />
+                        </Button>
+                      </Stack>
                     </Box>
 
                     {/* Evaluation Results */}
