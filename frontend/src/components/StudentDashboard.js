@@ -26,7 +26,7 @@ function StudentDashboard({ onLogout }) {
   const [results, setResults] = useState({});
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/jds", {
+    fetch("http://localhost:5000/jds", {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -40,7 +40,7 @@ function StudentDashboard({ onLogout }) {
       formData.append("resumes", file);
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/send-to-hr/${jdId}`, {
+    const res = await fetch(`http://localhost:5000/send-to-hr/${jdId}`, {
       method: "POST",
       body: formData,
       credentials: "include",
@@ -58,7 +58,7 @@ function StudentDashboard({ onLogout }) {
       formData.append("resumes", file);
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/analyze/${jdId}`, {
+    const res = await fetch(`http://localhost:5000/analyze/${jdId}`, {
       method: "POST",
       body: formData,
       credentials: "include",
