@@ -34,7 +34,8 @@ def send_to_hr(jd_id):
 
     for file in files:
 
-        filename = f"{student_email}_{file.filename}"
+        # Include jd_id in filename so HR can filter by job description
+        filename = f"{jd_id}_{student_email}_{file.filename}"
 
         save_path = os.path.join("uploads/hr_resumes", filename)
 
