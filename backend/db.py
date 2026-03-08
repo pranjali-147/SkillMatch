@@ -1,6 +1,7 @@
 """
 MongoDB connection and database access.
 """
+from gridfs import GridFSBucket
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
@@ -45,3 +46,9 @@ def get_uploaded_resumes_collection():
     db = get_db()
     collection = db["UploadedResume"]
     return collection
+
+
+def get_resumes_bucket():
+    """GridFS bucket for storing resume files."""
+    db = get_db()
+    return GridFSBucket(db, bucket_name="resumes")

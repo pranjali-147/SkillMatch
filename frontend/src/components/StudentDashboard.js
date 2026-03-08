@@ -50,7 +50,12 @@ function StudentDashboard({ username = "", onLogout }) {
         body: formData,
         credentials: "include",
       });
-      const data = await res.json();
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        // backend returned non-JSON (e.g. HTML error)
+      }
 
       if (res.ok) {
         setSnackbar({
@@ -61,7 +66,10 @@ function StudentDashboard({ username = "", onLogout }) {
       } else {
         setSnackbar({
           open: true,
-          message: data.error || data.message || "Could not send resumes. Please try again.",
+          message:
+            data.error ||
+            data.message ||
+            `Could not send resumes (HTTP ${res.status}). Please try again.`,
           severity: "error",
         });
       }

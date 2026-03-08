@@ -309,10 +309,10 @@ function Dashboard({ onLogout }) {
                       <Stack direction="row" alignItems="center" spacing={2}>
                         <Checkbox
                           checked={(selectedResumes[jd.id] || []).includes(
-                            resume.filename,
+                            resume.file_id,
                           )}
                           onChange={() =>
-                            handleCheckbox(jd.id, resume.filename)
+                            handleCheckbox(jd.id, resume.file_id)
                           }
                         />
 
