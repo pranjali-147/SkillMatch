@@ -1,16 +1,37 @@
-from flask import Blueprint, jsonify, request
-import json
+from flask import Blueprint, jsonify, request, session
+from pymongo.errors import PyMongoError
+
+from db import get_job_descriptions_collection
 
 jd_bp = Blueprint("jd", __name__)
 
+
+def _next_id(collection):
+    """Get next integer id for a new job description."""
+    doc = collection.find_one(sort=[("id", -1)])
+    return (doc["id"] + 1) if doc else 1
+
+
 # -------------------------------
-# GET ALL JDS
+# GET JDS (filtered by HR email for HR users)
 # -------------------------------
 @jd_bp.route("/jds", methods=["GET"])
 def get_job_descriptions():
-    with open("data/job_descriptions.json") as f:
-        data = json.load(f)
-    return jsonify(data)
+    try:
+        coll = get_job_descriptions_collection()
+        hr_email = session.get("user")
+        role = session.get("role")
+
+        if role == "hr" and hr_email:
+            cursor = coll.find({"hr_email": hr_email}, {"_id": 0})
+        else:
+            # Students and unauthenticated: return all JDs from MongoDB
+            cursor = coll.find({}, {"_id": 0})
+
+        jds = list(cursor)
+        return jsonify(jds)
+    except PyMongoError:
+        return jsonify([]), 200
 
 
 # -------------------------------
@@ -18,26 +39,35 @@ def get_job_descriptions():
 # -------------------------------
 @jd_bp.route("/jds", methods=["POST"])
 def add_job_description():
+    hr_email = session.get("user")
+    role = session.get("role")
+    if role != "hr" or not hr_email:
+        return jsonify({"message": "Only HR can add job descriptions"}), 403
+
     data = request.json
+    if not data:
+        return jsonify({"message": "Invalid data"}), 400
 
-    with open("data/job_descriptions.json", "r") as f:
-        jd_data = json.load(f)
+    required_skills = data.get("required_skills", [])
+    if isinstance(required_skills, str):
+        required_skills = [s.strip() for s in required_skills.split(",") if s.strip()]
 
-    new_id = max([jd["id"] for jd in jd_data]) + 1 if jd_data else 1
+    try:
+        coll = get_job_descriptions_collection()
+        new_id = _next_id(coll)
 
-    new_jd = {
-        "id": new_id,
-        "title": data["title"],
-        "description": data["description"],
-        "required_skills": data["required_skills"]
-    }
+        new_jd = {
+            "id": new_id,
+            "title": data.get("title", ""),
+            "description": data.get("description", ""),
+            "required_skills": required_skills,
+            "hr_email": hr_email,
+        }
 
-    jd_data.append(new_jd)
-
-    with open("data/job_descriptions.json", "w") as f:
-        json.dump(jd_data, f, indent=4)
-
-    return jsonify({"message": "JD added successfully"}), 201
+        coll.insert_one(new_jd)
+        return jsonify({"message": "JD added successfully"}), 201
+    except (ConnectionError, PyMongoError):
+        return jsonify({"message": "Database error. Could not save job description. Check MongoDB connection."}), 503
 
 
 # -------------------------------
@@ -45,32 +75,51 @@ def add_job_description():
 # -------------------------------
 @jd_bp.route("/jds/<int:jd_id>", methods=["PUT"])
 def update_job_description(jd_id):
+    hr_email = session.get("user")
+    role = session.get("role")
+    if role != "hr" or not hr_email:
+        return jsonify({"message": "Only HR can edit job descriptions"}), 403
+
     data = request.json
+    if not data:
+        return jsonify({"message": "Invalid data"}), 400
 
-    with open("data/job_descriptions.json", "r") as f:
-        jd_data = json.load(f)
+    coll = get_job_descriptions_collection()
+    result = coll.update_one(
+        {"id": jd_id, "hr_email": hr_email},
+        {
+            "$set": {
+                "title": data.get("title", ""),
+                "description": data.get("description", ""),
+                "required_skills": data.get("required_skills", []),
+            }
+        },
+    )
 
-    for jd in jd_data:
-        if jd["id"] == jd_id:
-            jd["title"] = data["title"]
-            jd["description"] = data["description"]
-            jd["required_skills"] = data["required_skills"]
-            break
-
-    with open("data/job_descriptions.json", "w") as f:
-        json.dump(jd_data, f, indent=4)
+    if result.modified_count == 0:
+        if coll.find_one({"id": jd_id}) is None:
+            return jsonify({"message": "JD not found"}), 404
+        return jsonify({"message": "You can only edit your own job descriptions"}), 403
 
     return jsonify({"message": "JD updated successfully"}), 200
 
 
+# -------------------------------
+# DELETE JD
+# -------------------------------
 @jd_bp.route("/jds/<int:jd_id>", methods=["DELETE"])
 def delete_job_description(jd_id):
-    with open("data/job_descriptions.json", "r") as f:
-        jd_data = json.load(f)
+    hr_email = session.get("user")
+    role = session.get("role")
+    if role != "hr" or not hr_email:
+        return jsonify({"message": "Only HR can delete job descriptions"}), 403
 
-    jd_data = [jd for jd in jd_data if jd["id"] != jd_id]
+    coll = get_job_descriptions_collection()
+    result = coll.delete_one({"id": jd_id, "hr_email": hr_email})
 
-    with open("data/job_descriptions.json", "w") as f:
-        json.dump(jd_data, f, indent=4)
+    if result.deleted_count == 0:
+        if coll.find_one({"id": jd_id}) is None:
+            return jsonify({"message": "JD not found"}), 404
+        return jsonify({"message": "You can only delete your own job descriptions"}), 403
 
     return jsonify({"message": "JD deleted successfully"}), 200

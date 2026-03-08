@@ -11,6 +11,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Divider,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   Work as WorkIcon,
@@ -21,12 +23,13 @@ import {
   Error as ErrorIcon,
 } from "@mui/icons-material";
 
-function StudentDashboard({ onLogout }) {
+function StudentDashboard({ username = "", onLogout }) {
   const [jds, setJds] = useState([]);
   const [results, setResults] = useState({});
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
   useEffect(() => {
-    fetch("http://127.0.0.1:5000/jds", {
+    fetch("http://localhost:5000/jds", {
       credentials: "include",
     })
       .then((res) => res.json())
@@ -34,21 +37,42 @@ function StudentDashboard({ onLogout }) {
   }, []);
   const handleSendToHR = async (event, jdId) => {
     const files = event.target.files;
-    const formData = new FormData();
+    if (!files || files.length === 0) return;
 
+    const formData = new FormData();
     for (let file of files) {
       formData.append("resumes", file);
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/send-to-hr/${jdId}`, {
-      method: "POST",
-      body: formData,
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(`http://localhost:5000/send-to-hr/${jdId}`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json();
 
-    const data = await res.json();
-
-    alert(data.message || "Resume sent to HR");
+      if (res.ok) {
+        setSnackbar({
+          open: true,
+          message: "Resumes sent successfully. HR will review your application.",
+          severity: "success",
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: data.error || data.message || "Could not send resumes. Please try again.",
+          severity: "error",
+        });
+      }
+    } catch {
+      setSnackbar({
+        open: true,
+        message: "Something went wrong. Please check your connection and try again.",
+        severity: "error",
+      });
+    }
+    event.target.value = "";
   };
   const handleUpload = async (event, jdId) => {
     const files = event.target.files;
@@ -58,7 +82,7 @@ function StudentDashboard({ onLogout }) {
       formData.append("resumes", file);
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/analyze/${jdId}`, {
+    const res = await fetch(`http://localhost:5000/analyze/${jdId}`, {
       method: "POST",
       body: formData,
       credentials: "include",
@@ -162,7 +186,7 @@ function StudentDashboard({ onLogout }) {
               mb: 1,
             }}
           >
-            Welcome, Student!
+            Welcome, {username || "Student"}!
           </Typography>
           <Typography
             variant="body1"
@@ -548,54 +572,175 @@ function StudentDashboard({ onLogout }) {
                                   Missing Skills
                                 </Typography>
                               </Stack>
-                              <Box sx={{ pl: 3.5 }}>
-                                {results[jd.id][0]?.missing_skills?.length >
-                                0 ? (
-                                  <Stack
-                                    direction="row"
-                                    spacing={1}
-                                    flexWrap="wrap"
-                                  >
-                                    {results[jd.id][0]?.missing_skills.map(
-                                      (skill, index) => (
-                                        <Chip
-                                          key={index}
-                                          label={skill}
-                                          size="small"
-                                          sx={{
-                                            bgcolor: "#ffebee",
-                                            color: "#d32f2f",
-                                            fontSize: "0.85rem",
-                                            fontWeight: 500,
-                                          }}
-                                        />
-                                      ),
-                                    )}
-                                  </Stack>
-                                ) : (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{ fontSize: "0.95rem" }}
-                                  >
-                                    No missing skills - Great match!
-                                  </Typography>
+                          <Box sx={{ pl: 3.5 }}>
+                            {results[jd.id][0]?.missing_skills?.length > 0 ? (
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                flexWrap="wrap"
+                              >
+                                {results[jd.id][0]?.missing_skills.map(
+                                  (skill, index) => (
+                                    <Chip
+                                      key={index}
+                                      label={skill}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: "#ffebee",
+                                        color: "#d32f2f",
+                                        fontSize: "0.85rem",
+                                        fontWeight: 500,
+                                      }}
+                                    />
+                                  ),
                                 )}
-                              </Box>
+                              </Stack>
+                            ) : (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontSize: "0.95rem" }}
+                              >
+                                No missing skills - Great match!
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+
+                        {/* Recommended YouTube Courses for Missing Skills */}
+                        {results[jd.id][0]?.course_recommendations &&
+                          Object.keys(
+                            results[jd.id][0].course_recommendations || {},
+                          ).length > 0 && (
+                            <Box sx={{ mt: 3 }}>
+                              <Typography
+                                variant="subtitle1"
+                                gutterBottom
+                                sx={{
+                                  fontSize: "1.05rem",
+                                  fontWeight: 600,
+                                  color: "#1e3c72",
+                                }}
+                              >
+                                Top YouTube Courses for Missing Skills
+                              </Typography>
+
+                              <Stack spacing={3}>
+                                {Object.entries(
+                                  results[jd.id][0].course_recommendations,
+                                ).map(([skill, courses]) => (
+                                  <Box key={skill}>
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
+                                        fontWeight: 600,
+                                        mb: 1,
+                                        fontSize: "0.95rem",
+                                      }}
+                                    >
+                                      {skill}
+                                    </Typography>
+
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 2,
+                                      }}
+                                    >
+                                      {courses.map((course, idx) => (
+                                        <Box
+                                          key={idx}
+                                          sx={{
+                                            width: 260,
+                                            bgcolor: "#fafafa",
+                                            borderRadius: 1,
+                                            boxShadow: 1,
+                                            overflow: "hidden",
+                                          }}
+                                        >
+                                          <a
+                                            href={course.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ textDecoration: "none" }}
+                                          >
+                                            {course.thumbnail_url && (
+                                              <Box
+                                                component="img"
+                                                src={course.thumbnail_url}
+                                                alt={course.title}
+                                                sx={{
+                                                  width: "100%",
+                                                  height: 145,
+                                                  objectFit: "cover",
+                                                }}
+                                              />
+                                            )}
+                                            <Box sx={{ p: 1.5 }}>
+                                              <Typography
+                                                variant="body2"
+                                                sx={{
+                                                  fontWeight: 600,
+                                                  fontSize: "0.9rem",
+                                                  color: "#1e3c72",
+                                                }}
+                                              >
+                                                {course.title}
+                                              </Typography>
+                                              <Typography
+                                                variant="caption"
+                                                sx={{ color: "text.secondary" }}
+                                              >
+                                                {course.view_count != null &&
+                                                  `${
+                                                    course.view_count.toLocaleString
+                                                      ? course.view_count.toLocaleString()
+                                                      : course.view_count
+                                                  } views`}
+                                              </Typography>
+                                            </Box>
+                                          </a>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </Stack>
                             </Box>
-                          </Paper>
-                        </Stack>
-                      </Box>
-                    )}
-                  </Stack>
-                </AccordionDetails>
-              </Accordion>
-            ))}
-          </Stack>
-        )}
-      </Container>
-    </Box>
-  );
+                          )}
+                      </Paper>
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        ))}
+      </Stack>
+    )}
+  </Container>
+
+  <Snackbar
+    open={snackbar.open}
+    autoHideDuration={5000}
+    onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+    anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+  >
+    <Alert
+      onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+      severity={snackbar.severity}
+      variant="filled"
+      sx={{
+        width: "100%",
+        "& .MuiAlert-message": { fontSize: "1rem" },
+      }}
+    >
+      {snackbar.message}
+    </Alert>
+  </Snackbar>
+</Box>
+);
 }
 
 export default StudentDashboard;

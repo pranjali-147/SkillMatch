@@ -33,8 +33,8 @@ function Login({ onLogin }) {
       const data = await res.json();
 
       if (res.ok) {
-        onLogin(data.role);
-        navigate("/dashboard");
+        onLogin(data.role, data.username);
+        navigate(data.role === "hr" ? "/hr" : "/student");
       } else {
         setError(data.message || "Invalid credentials");
       }

@@ -10,10 +10,12 @@ import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import StudentDashboard from "./components/StudentDashboard";
 import MainPage from "./components/MainPage";
+import Signup from "./components/Signup";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [role, setRole] = useState(null);
+  const [username, setUsername] = useState("");
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -25,6 +27,7 @@ function App() {
         if (data.logged_in) {
           setLoggedIn(true);
           setRole(data.role);
+          setUsername(data.username || "");
         }
         setChecking(false);
       });
@@ -38,6 +41,7 @@ function App() {
 
     setLoggedIn(false);
     setRole(null);
+    setUsername("");
   };
 
   if (checking) return <div>Loading...</div>;
@@ -45,8 +49,12 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Main Landing Page */}
-        <Route path="/" element={<MainPage />} />
+        {/* First page: Signup */}
+        <Route path="/" element={<Signup />} />
+        <Route path="/signup" element={<Signup />} />
+
+        {/* Optional: keep main landing page on a separate route */}
+        <Route path="/main" element={<MainPage />} />
 
         {/* Login Page */}
         <Route
@@ -54,9 +62,10 @@ function App() {
           element={
             !loggedIn ? (
               <Login
-                onLogin={(role) => {
+                onLogin={(role, username) => {
                   setLoggedIn(true);
                   setRole(role);
+                  setUsername(username || "");
                 }}
               />
             ) : (
@@ -82,7 +91,7 @@ function App() {
           path="/student"
           element={
             loggedIn && role === "student" ? (
-              <StudentDashboard onLogout={handleLogout} />
+              <StudentDashboard username={username} onLogout={handleLogout} />
             ) : (
               <Navigate to="/login" />
             )

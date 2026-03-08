@@ -42,7 +42,7 @@ function Dashboard({ onLogout }) {
   });
 
   const fetchJDs = () => {
-    fetch("http://127.0.0.1:5000/jds")
+    fetch("http://localhost:5000/jds", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setJds(data));
   };
@@ -53,22 +53,30 @@ function Dashboard({ onLogout }) {
 
   const handleSubmit = async () => {
     const url = editingId
-      ? `http://127.0.0.1:5000/jds/${editingId}`
-      : "http://127.0.0.1:5000/jds";
+      ? `http://localhost:5000/jds/${editingId}`
+      : "http://localhost:5000/jds";
 
     const method = editingId ? "PUT" : "POST";
 
-    await fetch(url, {
+    const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         title: formData.title,
         description: formData.description,
-        required_skills: formData.required_skills
+        required_skills: (formData.required_skills || "")
           .split(",")
-          .map((s) => s.trim()),
+          .map((s) => s.trim())
+          .filter(Boolean),
       }),
     });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.message || "Failed to save job description");
+      return;
+    }
 
     setShowForm(false);
     setEditingId(null);
@@ -79,7 +87,7 @@ function Dashboard({ onLogout }) {
 
   const handleDelete = async (id) => {
     if (window.confirm("Delete this JD?")) {
-      await fetch(`http://127.0.0.1:5000/jds/${id}`, { method: "DELETE" });
+      await fetch(`http://localhost:5000/jds/${id}`, { method: "DELETE", credentials: "include" });
       fetchJDs();
     }
   };
@@ -105,7 +113,7 @@ function Dashboard({ onLogout }) {
       formData.append("resumes", file);
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/analyze/${jdId}`, {
+    const res = await fetch(`http://localhost:5000/analyze/${jdId}`, {
       method: "POST",
       body: formData,
       credentials: "include",
@@ -124,7 +132,7 @@ function Dashboard({ onLogout }) {
   };
 
   const fetchHRResumes = async (jdId) => {
-    const res = await fetch(`http://127.0.0.1:5000/hr-resumes/${jdId}`);
+    const res = await fetch(`http://localhost:5000/hr-resumes/${jdId}`, { credentials: "include" });
 
     const data = await res.json();
 
@@ -160,7 +168,7 @@ function Dashboard({ onLogout }) {
       return;
     }
 
-    const res = await fetch(`http://127.0.0.1:5000/evaluate-selected/${jdId}`, {
+    const res = await fetch(`http://localhost:5000/evaluate-selected/${jdId}`, {
       method: "POST",
 
       headers: {
