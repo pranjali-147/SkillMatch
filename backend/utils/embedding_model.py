@@ -1,12 +1,14 @@
+
 import os
 import numpy as np
 from gensim.models import KeyedVectors
 from sklearn.metrics.pairwise import cosine_similarity
+from nltk.util import ngrams
 from .preprocessing import preprocess_text
 
 
 # ===============================
-# Load Local GloVe (50d - 2024)
+# Load Local GloVe (50d)
 # ===============================
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -17,7 +19,7 @@ EMBEDDING_PATH = os.path.join(
     "glove.2024.wikigiga.50d.txt"
 )
 
-# print("Loading GloVe 50d model locally...")
+print("Loading GloVe model...")
 
 # model = KeyedVectors.load_word2vec_format(
 #     EMBEDDING_PATH,
@@ -25,40 +27,40 @@ EMBEDDING_PATH = os.path.join(
 #     no_header=True
 # )
 
-# print("Model loaded successfully!")
+print("Model loaded successfully!")
 
 
 # ------------------------------
-# Sentence Embedding (fallback)
+# Generate N-grams (for skills)
+# ------------------------------
+def generate_ngrams(tokens, n=2):
+    return [" ".join(gram) for gram in ngrams(tokens, n)]
+
+
+# ------------------------------
+# Sentence Embedding (GloVe)
 # ------------------------------
 def get_sentence_vector(text):
-    """
-    Simple numeric representation of text without loading
-    the large GloVe model. We just use basic features so
-    the rest of the pipeline can run without errors.
-    """
+
     tokens = preprocess_text(text)
+    word_vectors = []
 
-    # Basic handcrafted embedding: [len, unique_count, avg_len] + zeros
-    length = len(tokens)
-    unique_count = len(set(tokens))
-    avg_len = np.mean([len(t) for t in tokens]) if tokens else 0.0
+    for token in tokens:
+        if token in model:
+            word_vectors.append(model[token])
 
-    # First 3 dims carry simple stats, rest are zeros to keep 50-dim shape.
-    vec = np.zeros(50, dtype=float)
-    vec[0] = float(length)
-    vec[1] = float(unique_count)
-    vec[2] = float(avg_len)
-    return vec
+    if len(word_vectors) == 0:
+        return np.zeros(50)
+
+    return np.mean(word_vectors, axis=0)
 
 
 # ------------------------------
 # Skill Extraction
 # ------------------------------
 def extract_skills(text):
-    tokens = preprocess_text(text)   # 🔥 use your existing preprocessing
+    tokens = preprocess_text(text)
     return set(tokens)
-
 
 
 # ------------------------------
@@ -72,11 +74,14 @@ def calculate_similarity(jd_text, resume_text, required_skills):
 
     semantic_score = cosine_similarity(vec1, vec2)[0][0] * 100
 
-    # ===== 2️⃣ Skill Matching (ONLY REQUIRED SKILLS) =====
-    resume_tokens = preprocess_text(resume_text)
+    # ===== 2️⃣ Skill Matching =====
+    tokens = preprocess_text(resume_text)
 
+    # Generate bigrams
+    bigrams = generate_ngrams(tokens, 2)
 
-    resume_clean_text = " ".join(resume_tokens)
+    # Combine
+    resume_tokens = tokens + bigrams
 
     required_skills_lower = [skill.lower() for skill in required_skills]
 
@@ -85,28 +90,17 @@ def calculate_similarity(jd_text, resume_text, required_skills):
 
     for skill in required_skills_lower:
 
-        # If skill is multi-word (phrase)
-        if " " in skill:
-            if skill in resume_clean_text:
-                matched_skills.append(skill)
-            else:
-                missing_skills.append(skill)
-
-        # If skill is single word
+        if skill in resume_tokens:
+            matched_skills.append(skill)
         else:
-            if skill in resume_tokens:
-                matched_skills.append(skill)
-            else:
-                missing_skills.append(skill)
-
+            missing_skills.append(skill)
 
     if len(required_skills_lower) > 0:
         skill_score = (len(matched_skills) / len(required_skills_lower)) * 100
     else:
         skill_score = 0
 
-
-    # ===== 3️⃣ Final Weighted Score =====
+    # ===== 3️⃣ Final Score =====
     final_score = (0.6 * skill_score) + (0.4 * semantic_score)
 
     return {
