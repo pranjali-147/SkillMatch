@@ -1,7 +1,7 @@
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-# Load .env FIRST so MONGODB_URI etc. are available when db.py loads
-load_dotenv()
+# # Load .env FIRST so MONGODB_URI etc. are available when db.py loads
+# load_dotenv()
 
 from flask import Flask
 from flask_cors import CORS

@@ -13,8 +13,29 @@ from db import (
 from utils.text_extractor import extract_text_from_bytes
 from utils.embedding_model import calculate_similarity
 from utils.course_recommender import get_course_recommendations
+from flask import send_file
+from bson import ObjectId
+import io
 
 analyze_routes = Blueprint("analyze_routes", __name__)
+
+
+
+@analyze_routes.route('/view-resume/<file_id>')
+def view_resume(file_id):
+    bucket = get_resumes_bucket()
+
+    try:
+        grid_file = bucket.open_download_stream(ObjectId(file_id))
+        file_bytes = grid_file.read()
+    except Exception as e:
+        return {"message": "File not found"}, 404
+
+    return send_file(
+        io.BytesIO(file_bytes),
+        download_name=grid_file.filename,
+        mimetype=grid_file.metadata.get("content_type", "application/octet-stream")
+    )
 
 
 def get_jd_data(jd_id):
@@ -56,7 +77,7 @@ def send_to_hr(jd_id):
             gridfs_file_id = bucket.upload_from_stream(
                 file.filename,
                 file.stream,
-                
+
                 metadata={
                     "student_email": student_email,
                     "hr_email": hr_email,
@@ -64,7 +85,7 @@ def send_to_hr(jd_id):
                     "uploaded_at": uploaded_at,
                     "content_type": file.mimetype,
                 },
-                
+
             )
             print("GRIDFS FILE ID:", gridfs_file_id)
         except (ConnectionError, PyMongoError):

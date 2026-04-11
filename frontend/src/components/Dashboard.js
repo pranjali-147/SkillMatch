@@ -7,7 +7,6 @@ import {
   Paper,
   Container,
   Stack,
-  IconButton,
   Chip,
   Accordion,
   AccordionSummary,
@@ -24,6 +23,7 @@ import {
   Upload as UploadIcon,
   Logout as LogoutIcon,
   ExpandMore as ExpandMoreIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 
 function Dashboard({ onLogout }) {
@@ -41,15 +41,15 @@ function Dashboard({ onLogout }) {
     required_skills: "",
   });
 
+  useEffect(() => {
+    fetchJDs();
+  }, []);
+
   const fetchJDs = () => {
     fetch("http://localhost:5000/jds", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setJds(data));
   };
-
-  useEffect(() => {
-    fetchJDs();
-  }, []);
 
   const handleSubmit = async () => {
     const url = editingId
@@ -58,25 +58,19 @@ function Dashboard({ onLogout }) {
 
     const method = editingId ? "PUT" : "POST";
 
-    const res = await fetch(url, {
+    await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
         title: formData.title,
         description: formData.description,
-        required_skills: (formData.required_skills || "")
+        required_skills: formData.required_skills
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
       }),
     });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      alert(data.message || "Failed to save job description");
-      return;
-    }
 
     setShowForm(false);
     setEditingId(null);
@@ -86,30 +80,27 @@ function Dashboard({ onLogout }) {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("Delete this JD?")) {
-      await fetch(`http://localhost:5000/jds/${id}`, { method: "DELETE", credentials: "include" });
-      fetchJDs();
-    }
+    await fetch(`http://localhost:5000/jds/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    fetchJDs();
   };
 
   const handleEdit = (jd) => {
     setEditingId(jd.id);
-
     setFormData({
       title: jd.title,
       description: jd.description,
       required_skills: jd.required_skills.join(", "),
     });
-
     setShowForm(true);
   };
 
-  const handleUpload = async (event, jdId) => {
-    const files = event.target.files;
-
+  const handleUpload = async (e, jdId) => {
     const formData = new FormData();
 
-    for (let file of files) {
+    for (let file of e.target.files) {
       formData.append("resumes", file);
     }
 
@@ -121,18 +112,20 @@ function Dashboard({ onLogout }) {
 
     const data = await res.json();
 
-    const sortedResults = data.results.sort(
-      (a, b) => b.final_score - a.final_score,
-    );
-
     setResults((prev) => ({
       ...prev,
-      [jdId]: sortedResults,
+      [jdId]: data.results.sort((a, b) => b.final_score - a.final_score),
     }));
   };
 
+  const handleViewResume = (fileId) => {
+    window.open(`http://localhost:5000/view-resume/${fileId}`, "_blank");
+  };
+
   const fetchHRResumes = async (jdId) => {
-    const res = await fetch(`http://localhost:5000/hr-resumes/${jdId}`, { credentials: "include" });
+    const res = await fetch(`http://localhost:5000/hr-resumes/${jdId}`, {
+      credentials: "include",
+    });
 
     const data = await res.json();
 
@@ -142,89 +135,64 @@ function Dashboard({ onLogout }) {
     }));
   };
 
-  const handleCheckbox = (jdId, filename) => {
+  const handleCheckbox = (jdId, fileId) => {
     setSelectedResumes((prev) => {
       const current = prev[jdId] || [];
 
-      if (current.includes(filename)) {
-        return {
-          ...prev,
-          [jdId]: current.filter((r) => r !== filename),
-        };
-      } else {
-        return {
-          ...prev,
-          [jdId]: [...current, filename],
-        };
-      }
+      return {
+        ...prev,
+        [jdId]: current.includes(fileId)
+          ? current.filter((r) => r !== fileId)
+          : [...current, fileId],
+      };
     });
   };
 
   const handleEvaluateSelected = async (jdId) => {
-    const resumes = selectedResumes[jdId] || [];
-
-    if (resumes.length === 0) {
-      alert("Please select resumes");
-      return;
-    }
-
     const res = await fetch(`http://localhost:5000/evaluate-selected/${jdId}`, {
       method: "POST",
-
-      headers: {
-        "Content-Type": "application/json",
-      },
-
+      headers: { "Content-Type": "application/json" },
       credentials: "include",
-
       body: JSON.stringify({
-        resumes,
+        resumes: selectedResumes[jdId],
       }),
     });
 
     const data = await res.json();
 
-    const sorted = data.results.sort((a, b) => b.final_score - a.final_score);
-
     setResults((prev) => ({
       ...prev,
-      [jdId]: sorted,
+      [jdId]: data.results.sort((a, b) => b.final_score - a.final_score),
     }));
   };
 
   const getScoreColor = (score) => {
-    if (score >= 80) return "#2e7d32";
-    if (score >= 60) return "#ed6c02";
+    if (score >= 75) return "#2e7d32";
+    if (score >= 50) return "#ed6c02";
     return "#d32f2f";
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#f4f6f8" }}>
       {/* HEADER */}
-
       <Paper sx={{ bgcolor: "#1e3c72", color: "white", py: 2, px: 4 }}>
         <Stack direction="row" justifyContent="space-between">
           <Typography variant="h5">HR Dashboard</Typography>
-
-          <Button
-            startIcon={<LogoutIcon />}
-            variant="outlined"
-            onClick={onLogout}
-            sx={{ color: "white", borderColor: "white" }}
-          >
+          <Button onClick={onLogout} color="inherit">
             Logout
           </Button>
         </Stack>
       </Paper>
 
       <Container sx={{ py: 4 }}>
+        {/* ADD JD */}
         <Button
           startIcon={<AddIcon />}
           variant="contained"
           sx={{ mb: 3 }}
           onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? "Cancel" : "Add JD"}
+          {showForm ? "Cancel" : "Add Job Description"}
         </Button>
 
         {showForm && (
@@ -249,120 +217,194 @@ function Dashboard({ onLogout }) {
               />
 
               <TextField
-                label="Skills"
+                label="Skills (comma separated)"
+                multiline
+                rows={3}
                 value={formData.required_skills}
                 onChange={(e) =>
-                  setFormData({ ...formData, required_skills: e.target.value })
+                  setFormData({
+                    ...formData,
+                    required_skills: e.target.value,
+                  })
                 }
               />
 
               <Button variant="contained" onClick={handleSubmit}>
-                {editingId ? "Update" : "Create"}
+                {editingId ? "Update JD" : "Create JD"}
               </Button>
             </Stack>
           </Paper>
         )}
 
+        {/* JDs */}
         {jds.map((jd) => (
-          <Accordion key={jd.id}>
+          <Accordion key={jd.id} sx={{ mb: 2 }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography>{jd.title}</Typography>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <WorkIcon />
+                <Typography sx={{ fontWeight: 600 }}>{jd.title}</Typography>
+              </Stack>
             </AccordionSummary>
 
             <AccordionDetails>
-              <Typography>{jd.description}</Typography>
+              <Stack spacing={3}>
+                {/* DESCRIPTION */}
+                <Typography>{jd.description}</Typography>
 
-              <Stack direction="row" spacing={1} sx={{ my: 1 }}>
-                {jd.required_skills.map((s, i) => (
-                  <Chip key={i} label={s} />
-                ))}
-              </Stack>
-
-              <Button
-                component="label"
-                variant="contained"
-                startIcon={<UploadIcon />}
-              >
-                Upload Resumes
-                <input
-                  hidden
-                  type="file"
-                  multiple
-                  onChange={(e) => handleUpload(e, jd.id)}
-                />
-              </Button>
-
-              <Button
-                variant="outlined"
-                sx={{ ml: 2 }}
-                onClick={() => fetchHRResumes(jd.id)}
-              >
-                View Uploaded Resumes
-              </Button>
-
-              {hrResumes[jd.id] && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="h6">Uploaded Resumes</Typography>
-
-                  {hrResumes[jd.id].map((resume, index) => (
-                    <Paper key={index} sx={{ p: 2, mt: 1 }}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Checkbox
-                          checked={(selectedResumes[jd.id] || []).includes(
-                            resume.file_id,
-                          )}
-                          onChange={() =>
-                            handleCheckbox(jd.id, resume.file_id)
-                          }
-                        />
-
-                        <Box>
-                          <Typography>{resume.filename}</Typography>
-
-                          <Typography variant="caption">
-                            Uploaded by: {resume.uploaded_by}
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </Paper>
+                {/* SKILLS */}
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {jd.required_skills.map((s, i) => (
+                    <Chip key={i} label={s} />
                   ))}
+                </Stack>
+
+                {/* ACTIONS */}
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    startIcon={<EditIcon />}
+                    variant="outlined"
+                    onClick={() => handleEdit(jd)}
+                  >
+                    Edit
+                  </Button>
 
                   <Button
-                    variant="contained"
-                    sx={{ mt: 2 }}
-                    onClick={() => handleEvaluateSelected(jd.id)}
+                    startIcon={<DeleteIcon />}
+                    color="error"
+                    variant="outlined"
+                    onClick={() => handleDelete(jd.id)}
                   >
-                    Evaluate Selected
+                    Delete
                   </Button>
-                </Box>
-              )}
+                </Stack>
 
-              {results[jd.id] && (
-                <Box sx={{ mt: 4 }}>
-                  <Typography variant="h6">
-                    Results (Sorted by Score)
-                  </Typography>
+                <Divider />
 
-                  {results[jd.id].map((r, i) => (
-                    <Paper
-                      key={i}
-                      sx={{
-                        p: 2,
-                        mt: 1,
-                        borderLeft: `6px solid ${getScoreColor(r.final_score)}`,
-                      }}
+                {/* UPLOAD */}
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    component="label"
+                    variant="contained"
+                    startIcon={<UploadIcon />}
+                  >
+                    Upload Resumes
+                    <input
+                      hidden
+                      type="file"
+                      multiple
+                      onChange={(e) => handleUpload(e, jd.id)}
+                    />
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    onClick={() => fetchHRResumes(jd.id)}
+                  >
+                    View Uploaded Resumes
+                  </Button>
+                </Stack>
+
+                {/* RESUME LIST */}
+                {hrResumes[jd.id] && (
+                  <Box>
+                    <Typography variant="h6" sx={{ mb: 1 }}>
+                      Uploaded Resumes
+                    </Typography>
+
+                    <Stack spacing={1}>
+                      {hrResumes[jd.id].map((r, i) => (
+                        <Paper key={i} sx={{ p: 2 }}>
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                          >
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              alignItems="center"
+                            >
+                              <Checkbox
+                                checked={(
+                                  selectedResumes[jd.id] || []
+                                ).includes(r.file_id)}
+                                onChange={() =>
+                                  handleCheckbox(jd.id, r.file_id)
+                                }
+                              />
+                              <Box>
+                                <Typography>{r.filename}</Typography>
+                                <Typography variant="caption">
+                                  {r.uploaded_by}
+                                </Typography>
+                              </Box>
+                            </Stack>
+
+                            <Button
+                              size="small"
+                              startIcon={<VisibilityIcon />}
+                              onClick={() => handleViewResume(r.file_id)}
+                            >
+                              View
+                            </Button>
+                          </Stack>
+                        </Paper>
+                      ))}
+                    </Stack>
+
+                    <Button
+                      variant="contained"
+                      sx={{ mt: 2 }}
+                      onClick={() => handleEvaluateSelected(jd.id)}
                     >
-                      <Typography>{r.filename}</Typography>
+                      Evaluate Selected
+                    </Button>
+                  </Box>
+                )}
 
-                      <Typography variant="caption">
-                        Uploaded by: {r.uploaded_by}
-                      </Typography>
+                {/* RESULTS */}
+                {results[jd.id] && (
+                  <Box>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                      Results
+                    </Typography>
 
-                      <Typography>Score: {r.final_score}%</Typography>
-                    </Paper>
-                  ))}
-                </Box>
-              )}
+                    <Stack spacing={1}>
+                      {results[jd.id].map((r, i) => (
+                        <Paper
+                          key={i}
+                          sx={{
+                            p: 2,
+                            borderLeft: `6px solid ${getScoreColor(
+                              r.final_score,
+                            )}`,
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 600 }}>
+                            {r.filename}
+                          </Typography>
+
+                          <Typography variant="caption">
+                            {r.uploaded_by}
+                          </Typography>
+
+                          <Typography sx={{ mt: 1 }}>
+                            Score:{" "}
+                            <span
+                              style={{
+                                color: getScoreColor(r.final_score),
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {r.final_score}%
+                            </span>
+                          </Typography>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+              </Stack>
             </AccordionDetails>
           </Accordion>
         ))}

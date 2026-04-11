@@ -21,11 +21,11 @@ EMBEDDING_PATH = os.path.join(
 
 print("Loading GloVe model...")
 
-# model = KeyedVectors.load_word2vec_format(
-#     EMBEDDING_PATH,
-#     binary=False,
-#     no_header=True
-# )
+model = KeyedVectors.load_word2vec_format(
+    EMBEDDING_PATH,
+    binary=False,
+    no_header=True
+)
 
 print("Model loaded successfully!")
 
