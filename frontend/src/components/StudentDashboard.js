@@ -25,7 +25,6 @@ function StudentDashboard({ username = "", onLogout }) {
   const [showCourses, setShowCourses] = useState({});
   const [loading, setLoading] = useState({});
 
-  // FETCH JDs
   useEffect(() => {
     fetch("http://localhost:5000/jds", {
       credentials: "include",
@@ -34,7 +33,6 @@ function StudentDashboard({ username = "", onLogout }) {
       .then((data) => setJds(data));
   }, []);
 
-  // UPLOAD + ANALYZE
   const handleUpload = async (event, jdId) => {
     const formData = new FormData();
     for (let file of event.target.files) {
@@ -56,14 +54,11 @@ function StudentDashboard({ username = "", onLogout }) {
         ...prev,
         [jdId]: data.results,
       }));
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) {}
 
     setLoading((prev) => ({ ...prev, [jdId]: false }));
   };
 
-  // SEND TO HR
   const handleSendToHR = async (event, jdId) => {
     const formData = new FormData();
 
@@ -71,47 +66,63 @@ function StudentDashboard({ username = "", onLogout }) {
       formData.append("resumes", file);
     }
 
-    try {
-      const res = await fetch(`http://localhost:5000/send-to-hr/${jdId}`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
+    await fetch(`http://localhost:5000/send-to-hr/${jdId}`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
 
-      const data = await res.json();
-      alert(data.message || "Sent to HR successfully");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to send to HR");
-    }
+    alert("Sent to HR successfully");
   };
 
   const getScoreColor = (score) => {
-    if (score >= 75) return "#2e7d32";
-    if (score >= 50) return "#ed6c02";
-    return "#d32f2f";
+    if (score >= 75) return "#4caf50";
+    if (score >= 50) return "#ff9800";
+    return "#f44336";
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f4f6f8" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "#eef2f7" }}>
       {/* HEADER */}
-      <Paper sx={{ bgcolor: "#1e3c72", color: "white", py: 2, px: 4 }}>
+      <Box
+        sx={{
+          background: "linear-gradient(135deg, #1e3c72, #2a5298)",
+          color: "white",
+          py: 3,
+          px: 4,
+          boxShadow: 3,
+        }}
+      >
         <Stack direction="row" justifyContent="space-between">
-          <Typography variant="h5">Student Dashboard</Typography>
-          <Button onClick={onLogout} color="inherit">
+          <Typography variant="h5" fontWeight={600}>
+            Student Dashboard
+          </Typography>
+          <Button
+            startIcon={<LogoutIcon />}
+            onClick={onLogout}
+            sx={{ color: "#fff" }}
+          >
             Logout
           </Button>
         </Stack>
-      </Paper>
+      </Box>
 
       <Container sx={{ py: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          Welcome, {username || "Student"}
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+          Welcome, {username || "Student"} 👋
         </Typography>
 
-        <Stack spacing={2}>
+        <Stack spacing={3}>
           {jds.map((jd) => (
-            <Accordion key={jd.id}>
+            <Accordion
+              key={jd.id}
+              sx={{
+                borderRadius: 3,
+                overflow: "hidden",
+                boxShadow: 3,
+                "&:before": { display: "none" },
+              }}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography sx={{ fontWeight: 600 }}>{jd.title}</Typography>
               </AccordionSummary>
@@ -125,123 +136,111 @@ function StudentDashboard({ username = "", onLogout }) {
 
                   {/* SKILLS */}
                   <Box>
-                    <Typography sx={{ fontWeight: 600, mb: 1 }}>
+                    <Typography fontWeight={600} mb={1}>
                       Required Skills
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" flexWrap="wrap" gap={1}>
                       {jd.required_skills.map((skill, i) => (
-                        <Chip key={i} label={skill} />
+                        <Chip key={i} label={skill} color="primary" />
                       ))}
                     </Stack>
                   </Box>
 
                   {/* BUTTONS */}
-                  <Box>
-                    {loading[jd.id] ? (
-                      <Stack direction="row" spacing={2}>
-                        <CircularProgress size={24} />
-                        <Typography>Evaluating resume...</Typography>
-                      </Stack>
-                    ) : (
-                      <Stack direction="row" spacing={2}>
-                        <Button
-                          variant="contained"
-                          component="label"
-                          startIcon={<SchoolIcon />}
-                        >
-                          Upload Resume
-                          <input
-                            hidden
-                            type="file"
-                            onChange={(e) => handleUpload(e, jd.id)}
-                          />
-                        </Button>
+                  {loading[jd.id] ? (
+                    <Stack direction="row" spacing={2} alignItems="center">
+                      <CircularProgress size={22} />
+                      <Typography>Analyzing Resume...</Typography>
+                    </Stack>
+                  ) : (
+                    <Stack direction="row" spacing={2}>
+                      <Button
+                        variant="contained"
+                        component="label"
+                        startIcon={<SchoolIcon />}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Upload Resume
+                        <input
+                          hidden
+                          type="file"
+                          onChange={(e) => handleUpload(e, jd.id)}
+                        />
+                      </Button>
 
-                        <Button variant="outlined" component="label">
-                          Send to HR
-                          <input
-                            hidden
-                            type="file"
-                            onChange={(e) => handleSendToHR(e, jd.id)}
-                          />
-                        </Button>
-                      </Stack>
-                    )}
-                  </Box>
+                      <Button
+                        variant="outlined"
+                        component="label"
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Send to HR
+                        <input
+                          hidden
+                          type="file"
+                          onChange={(e) => handleSendToHR(e, jd.id)}
+                        />
+                      </Button>
+                    </Stack>
+                  )}
 
                   {/* RESULTS */}
                   {results[jd.id] && (
                     <Box>
-                      <Typography variant="h6" sx={{ mb: 2 }}>
+                      <Typography variant="h6" mb={2}>
                         Evaluation Result
                       </Typography>
 
-                      {/* SCORES */}
-                      <Paper sx={{ p: 3 }}>
-                        <Stack direction="row" spacing={5}>
-                          <Box>
-                            <Typography color="text.secondary">
-                              Final Score
-                            </Typography>
-                            <Typography
-                              variant="h5"
+                      {/* SCORE CARDS */}
+                      <Stack direction="row" spacing={3}>
+                        {["final_score", "semantic_score", "skill_score"].map(
+                          (key) => (
+                            <Paper
+                              key={key}
                               sx={{
-                                color: getScoreColor(
-                                  results[jd.id][0].final_score,
-                                ),
-                                fontWeight: 600,
+                                p: 3,
+                                flex: 1,
+                                textAlign: "center",
+                                borderRadius: 3,
                               }}
                             >
-                              {results[jd.id][0].final_score}%
-                            </Typography>
-                          </Box>
-
-                          <Box>
-                            <Typography color="text.secondary">
-                              Semantic Score
-                            </Typography>
-                            <Typography variant="h6">
-                              {results[jd.id][0].semantic_score}%
-                            </Typography>
-                          </Box>
-
-                          <Box>
-                            <Typography color="text.secondary">
-                              Skill Score
-                            </Typography>
-                            <Typography variant="h6">
-                              {results[jd.id][0].skill_score}%
-                            </Typography>
-                          </Box>
-                        </Stack>
-                      </Paper>
+                              <Typography color="text.secondary">
+                                {key.replace("_", " ")}
+                              </Typography>
+                              <Typography
+                                variant="h5"
+                                sx={{
+                                  color:
+                                    key === "final_score"
+                                      ? getScoreColor(results[jd.id][0][key])
+                                      : "#1e3c72",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {results[jd.id][0][key]}%
+                              </Typography>
+                            </Paper>
+                          ),
+                        )}
+                      </Stack>
 
                       {/* SKILLS */}
-                      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                      <Stack direction="row" spacing={2} mt={3}>
                         <Paper sx={{ p: 2, flex: 1 }}>
-                          <Typography sx={{ fontWeight: 600 }}>
+                          <Typography fontWeight={600}>
                             Matched Skills
                           </Typography>
-
-                          <Stack direction="row" spacing={1} flexWrap="wrap">
-                            {results[jd.id][0].matched_skills.length > 0 ? (
-                              results[jd.id][0].matched_skills.map((s, i) => (
-                                <Chip key={i} label={s} color="success" />
-                              ))
-                            ) : (
-                              <Typography variant="body2">
-                                No matched skills
-                              </Typography>
-                            )}
+                          <Stack direction="row" flexWrap="wrap" gap={1}>
+                            {results[jd.id][0].matched_skills.map((s, i) => (
+                              <Chip key={i} label={s} color="success" />
+                            ))}
                           </Stack>
                         </Paper>
 
                         <Paper sx={{ p: 2, flex: 1 }}>
-                          <Typography sx={{ fontWeight: 600 }}>
+                          <Typography fontWeight={600}>
                             Missing Skills
                           </Typography>
-
-                          <Stack direction="row" spacing={1} flexWrap="wrap">
+                          <Stack direction="row" flexWrap="wrap" gap={1}>
                             {results[jd.id][0].missing_skills.map((s, i) => (
                               <Chip key={i} label={s} color="error" />
                             ))}
@@ -249,7 +248,7 @@ function StudentDashboard({ username = "", onLogout }) {
                         </Paper>
                       </Stack>
 
-                      {/* COURSES BUTTON */}
+                      {/* COURSES */}
                       <Button
                         sx={{ mt: 2 }}
                         variant="outlined"
@@ -265,28 +264,29 @@ function StudentDashboard({ username = "", onLogout }) {
                           : "View Recommended Courses"}
                       </Button>
 
-                      {/* COURSES GRID */}
                       {showCourses[jd.id] && (
                         <Box
                           sx={{
                             mt: 2,
                             display: "grid",
-                            gridTemplateColumns: "repeat(5, 1fr)",
+                            gridTemplateColumns:
+                              "repeat(auto-fill, minmax(180px, 1fr))",
                             gap: 2,
                           }}
                         >
-                          {Object.entries(
+                          {Object.values(
                             results[jd.id][0].course_recommendations || {},
-                          ).map(([skill, courses]) => {
+                          ).map((courses, i) => {
                             const course = courses[0];
-
                             if (!course) return null;
 
                             return (
                               <Paper
-                                key={skill}
+                                key={i}
                                 sx={{
-                                  p: 1,
+                                  overflow: "hidden",
+                                  borderRadius: 3,
+                                  transition: "0.3s",
                                   "&:hover": {
                                     transform: "scale(1.05)",
                                   },
@@ -309,8 +309,8 @@ function StudentDashboard({ username = "", onLogout }) {
                                   />
                                   <Typography
                                     sx={{
+                                      p: 1,
                                       fontSize: "0.85rem",
-                                      mt: 1,
                                       color: "#1e3c72",
                                     }}
                                   >

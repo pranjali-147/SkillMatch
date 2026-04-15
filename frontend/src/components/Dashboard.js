@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import bgImage from "../assets/dashboard_bg.png";
 import {
   Box,
   Typography,
@@ -16,12 +17,10 @@ import {
 } from "@mui/material";
 
 import {
-  Work as WorkIcon,
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Upload as UploadIcon,
-  Logout as LogoutIcon,
   ExpandMore as ExpandMoreIcon,
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
@@ -99,7 +98,6 @@ function Dashboard({ onLogout }) {
 
   const handleUpload = async (e, jdId) => {
     const formData = new FormData();
-
     for (let file of e.target.files) {
       formData.append("resumes", file);
     }
@@ -138,7 +136,6 @@ function Dashboard({ onLogout }) {
   const handleCheckbox = (jdId, fileId) => {
     setSelectedResumes((prev) => {
       const current = prev[jdId] || [];
-
       return {
         ...prev,
         [jdId]: current.includes(fileId)
@@ -173,30 +170,65 @@ function Dashboard({ onLogout }) {
   };
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f4f6f8" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        position: "relative",
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(10, 25, 50, 0.75)", // dark overlay (professional look)
+        },
+      }}
+    >
       {/* HEADER */}
-      <Paper sx={{ bgcolor: "#1e3c72", color: "white", py: 2, px: 4 }}>
+      <Box
+        sx={{
+          background: "linear-gradient(135deg, #1e3c72, #2a5298)",
+          color: "white",
+          py: 3,
+          px: 5,
+          boxShadow: 3,
+        }}
+      >
         <Stack direction="row" justifyContent="space-between">
-          <Typography variant="h5">HR Dashboard</Typography>
-          <Button onClick={onLogout} color="inherit">
+          <Typography variant="h4" fontWeight={700}>
+            HR Dashboard
+          </Typography>
+
+          <Button
+            onClick={onLogout}
+            variant="contained"
+            sx={{ bgcolor: "white", color: "#1e3c72" }}
+          >
             Logout
           </Button>
         </Stack>
-      </Paper>
+      </Box>
 
       <Container sx={{ py: 4 }}>
         {/* ADD JD */}
         <Button
           startIcon={<AddIcon />}
           variant="contained"
-          sx={{ mb: 3 }}
+          sx={{ mb: 3, borderRadius: 3 }}
           onClick={() => setShowForm(!showForm)}
         >
           {showForm ? "Cancel" : "Add Job Description"}
         </Button>
 
+        {/* FORM */}
         {showForm && (
-          <Paper sx={{ p: 3, mb: 3 }}>
+          <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
             <Stack spacing={2}>
               <TextField
                 label="Title"
@@ -219,7 +251,7 @@ function Dashboard({ onLogout }) {
               <TextField
                 label="Skills (comma separated)"
                 multiline
-                rows={3}
+                rows={2}
                 value={formData.required_skills}
                 onChange={(e) =>
                   setFormData({
@@ -238,23 +270,18 @@ function Dashboard({ onLogout }) {
 
         {/* JDs */}
         {jds.map((jd) => (
-          <Accordion key={jd.id} sx={{ mb: 2 }}>
+          <Accordion key={jd.id} sx={{ mb: 2, borderRadius: 3 }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <WorkIcon />
-                <Typography sx={{ fontWeight: 600 }}>{jd.title}</Typography>
-              </Stack>
+              <Typography fontWeight={600}>{jd.title}</Typography>
             </AccordionSummary>
 
             <AccordionDetails>
-              <Stack spacing={3}>
-                {/* DESCRIPTION */}
-                <Typography>{jd.description}</Typography>
+              <Stack spacing={2}>
+                <Typography color="text.secondary">{jd.description}</Typography>
 
-                {/* SKILLS */}
                 <Stack direction="row" flexWrap="wrap" gap={1}>
                   {jd.required_skills.map((s, i) => (
-                    <Chip key={i} label={s} />
+                    <Chip key={i} label={s} color="primary" />
                   ))}
                 </Stack>
 
@@ -262,7 +289,6 @@ function Dashboard({ onLogout }) {
                 <Stack direction="row" spacing={2}>
                   <Button
                     startIcon={<EditIcon />}
-                    variant="outlined"
                     onClick={() => handleEdit(jd)}
                   >
                     Edit
@@ -271,7 +297,6 @@ function Dashboard({ onLogout }) {
                   <Button
                     startIcon={<DeleteIcon />}
                     color="error"
-                    variant="outlined"
                     onClick={() => handleDelete(jd.id)}
                   >
                     Delete
@@ -287,7 +312,7 @@ function Dashboard({ onLogout }) {
                     variant="contained"
                     startIcon={<UploadIcon />}
                   >
-                    Upload Resumes
+                    Upload
                     <input
                       hidden
                       type="file"
@@ -296,113 +321,70 @@ function Dashboard({ onLogout }) {
                     />
                   </Button>
 
-                  <Button
-                    variant="outlined"
-                    onClick={() => fetchHRResumes(jd.id)}
-                  >
-                    View Uploaded Resumes
+                  <Button onClick={() => fetchHRResumes(jd.id)}>
+                    View Resumes
                   </Button>
                 </Stack>
 
                 {/* RESUME LIST */}
                 {hrResumes[jd.id] && (
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 1 }}>
-                      Uploaded Resumes
-                    </Typography>
-
-                    <Stack spacing={1}>
-                      {hrResumes[jd.id].map((r, i) => (
-                        <Paper key={i} sx={{ p: 2 }}>
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                          >
-                            <Stack
-                              direction="row"
-                              spacing={2}
-                              alignItems="center"
-                            >
-                              <Checkbox
-                                checked={(
-                                  selectedResumes[jd.id] || []
-                                ).includes(r.file_id)}
-                                onChange={() =>
-                                  handleCheckbox(jd.id, r.file_id)
-                                }
-                              />
-                              <Box>
-                                <Typography>{r.filename}</Typography>
-                                <Typography variant="caption">
-                                  {r.uploaded_by}
-                                </Typography>
-                              </Box>
-                            </Stack>
-
-                            <Button
-                              size="small"
-                              startIcon={<VisibilityIcon />}
-                              onClick={() => handleViewResume(r.file_id)}
-                            >
-                              View
-                            </Button>
+                  <Stack spacing={1}>
+                    {hrResumes[jd.id].map((r, i) => (
+                      <Paper key={i} sx={{ p: 2 }}>
+                        <Stack direction="row" justifyContent="space-between">
+                          <Stack direction="row" spacing={2}>
+                            <Checkbox
+                              checked={(selectedResumes[jd.id] || []).includes(
+                                r.file_id,
+                              )}
+                              onChange={() => handleCheckbox(jd.id, r.file_id)}
+                            />
+                            <Typography>{r.filename}</Typography>
                           </Stack>
-                        </Paper>
-                      ))}
-                    </Stack>
+
+                          <Button
+                            startIcon={<VisibilityIcon />}
+                            onClick={() => handleViewResume(r.file_id)}
+                          >
+                            View
+                          </Button>
+                        </Stack>
+                      </Paper>
+                    ))}
 
                     <Button
                       variant="contained"
-                      sx={{ mt: 2 }}
                       onClick={() => handleEvaluateSelected(jd.id)}
                     >
                       Evaluate Selected
                     </Button>
-                  </Box>
+                  </Stack>
                 )}
 
                 {/* RESULTS */}
                 {results[jd.id] && (
-                  <Box>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                      Results
-                    </Typography>
+                  <Stack spacing={1}>
+                    {results[jd.id].map((r, i) => (
+                      <Paper
+                        key={i}
+                        sx={{
+                          p: 2,
+                          borderLeft: `6px solid ${getScoreColor(
+                            r.final_score,
+                          )}`,
+                        }}
+                      >
+                        <Typography fontWeight={600}>{r.filename}</Typography>
 
-                    <Stack spacing={1}>
-                      {results[jd.id].map((r, i) => (
-                        <Paper
-                          key={i}
-                          sx={{
-                            p: 2,
-                            borderLeft: `6px solid ${getScoreColor(
-                              r.final_score,
-                            )}`,
-                          }}
-                        >
-                          <Typography sx={{ fontWeight: 600 }}>
-                            {r.filename}
-                          </Typography>
-
-                          <Typography variant="caption">
-                            {r.uploaded_by}
-                          </Typography>
-
-                          <Typography sx={{ mt: 1 }}>
-                            Score:{" "}
-                            <span
-                              style={{
-                                color: getScoreColor(r.final_score),
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {r.final_score}%
-                            </span>
-                          </Typography>
-                        </Paper>
-                      ))}
-                    </Stack>
-                  </Box>
+                        <Typography>
+                          Score:{" "}
+                          <b style={{ color: getScoreColor(r.final_score) }}>
+                            {r.final_score}%
+                          </b>
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
                 )}
               </Stack>
             </AccordionDetails>
