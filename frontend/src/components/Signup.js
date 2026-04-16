@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import bgImage from "../assets/login_bg.png";
 import {
   Box,
   Typography,
@@ -52,9 +53,7 @@ function Signup() {
       return true;
     }
 
-    setPasswordError(
-      `Password must contain ${errors.join(", ")}.`
-    );
+    setPasswordError(`Password must contain ${errors.join(", ")}.`);
     return false;
   };
 
@@ -69,10 +68,7 @@ function Signup() {
   };
 
   const isFormValid =
-    username.trim() &&
-    email.trim() &&
-    password.trim() &&
-    !passwordError;
+    username.trim() && email.trim() && password.trim() && !passwordError;
 
   const handleSignup = async () => {
     if (!validatePassword(password)) {
@@ -112,10 +108,12 @@ function Signup() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundImage: `url('https://images.unsplash.com/photo-1586281380117-5a60ae2050cc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`,
+        backgroundImage: `url(${bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
+        backgroundAttachment: "fixed",
         position: "relative",
+
         "&::before": {
           content: '""',
           position: "absolute",
@@ -123,149 +121,150 @@ function Signup() {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: alpha("#000", 0.5),
+          background: "rgba(10, 25, 50, 0.75)", // SAME DARK OVERLAY
         },
       }}
     >
-      <Container maxWidth="sm" sx={{ position: "relative", zIndex: 1 }}>
+      <Container maxWidth="sm">
         <Paper
-          elevation={3}
+          elevation={0}
           sx={{
             p: 5,
-            borderRadius: 2,
-            bgcolor: alpha("#fff", 0.95),
-            backdropFilter: "blur(10px)",
+            borderRadius: 4,
+            background: "rgba(255,255,255,0.08)",
+            backdropFilter: "blur(15px)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            color: "#fff",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
           }}
         >
+          {/* TITLE */}
           <Typography
             variant="h4"
             align="center"
-            gutterBottom
             sx={{
-              color: "#1e3c72",
               fontWeight: 700,
-              fontSize: "2rem",
-              letterSpacing: "-0.5px",
+              mb: 1,
+              letterSpacing: "0.5px",
             }}
           >
-            Create Your Account
+            Create Account
           </Typography>
 
           <Typography
-            variant="body2"
             align="center"
-            color="text.secondary"
             sx={{
               mb: 4,
-              fontSize: "1rem",
+              opacity: 0.7,
+              fontSize: "0.95rem",
             }}
           >
-            Sign up to get started with SkillMatch
+            Join SkillMatch AI
           </Typography>
 
           <Stack spacing={3}>
+            {/* USERNAME */}
             <TextField
               fullWidth
               label="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              size="medium"
-              sx={{
-                "& .MuiInputLabel-root": { fontSize: "1rem" },
-                "& .MuiInputBase-input": { fontSize: "1rem" },
-              }}
+              variant="outlined"
+              InputLabelProps={{ style: { color: "#ccc" } }}
+              InputProps={{ style: { color: "#fff" } }}
             />
 
+            {/* EMAIL */}
             <TextField
               fullWidth
               label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              size="medium"
-              sx={{
-                "& .MuiInputLabel-root": { fontSize: "1rem" },
-                "& .MuiInputBase-input": { fontSize: "1rem" },
-              }}
+              InputLabelProps={{ style: { color: "#ccc" } }}
+              InputProps={{ style: { color: "#fff" } }}
             />
 
-            <FormControl fullWidth size="medium" sx={{ "& .MuiInputLabel-root": { fontSize: "1rem" } }}>
-              <InputLabel>Role</InputLabel>
+            {/* ROLE */}
+            <FormControl fullWidth>
+              <InputLabel sx={{ color: "#ccc" }}>Role</InputLabel>
               <Select
                 value={role}
                 label="Role"
                 onChange={(e) => setRole(e.target.value)}
+                sx={{ color: "#fff" }}
               >
                 <MenuItem value="student">Student</MenuItem>
                 <MenuItem value="hr">HR</MenuItem>
               </Select>
             </FormControl>
 
-            {error && (
-              <Typography color="error" variant="body2" sx={{ fontSize: "0.95rem" }}>
-                {error}
-              </Typography>
-            )}
-
+            {/* PASSWORD */}
             <TextField
               fullWidth
               label="Password"
               type="password"
               value={password}
               onChange={handlePasswordChange}
-              size="medium"
               error={Boolean(passwordError)}
               helperText={
                 passwordError ||
-                "Use at least 8 characters, with uppercase, lowercase, number and symbol."
+                "Min 8 chars, uppercase, lowercase, number & symbol"
               }
-              sx={{
-                "& .MuiInputLabel-root": { fontSize: "1rem" },
-                "& .MuiInputBase-input": { fontSize: "1rem" },
+              InputLabelProps={{ style: { color: "#ccc" } }}
+              InputProps={{ style: { color: "#fff" } }}
+              FormHelperTextProps={{
+                sx: { color: passwordError ? "#ff6b6b" : "#bbb" },
               }}
             />
 
+            {/* ERROR */}
+            {error && (
+              <Typography sx={{ color: "#ff6b6b", fontSize: "0.9rem" }}>
+                {error}
+              </Typography>
+            )}
+
+            {/* BUTTON */}
             <Button
               fullWidth
               variant="contained"
-              size="large"
               startIcon={<PersonAddIcon />}
               onClick={handleSignup}
               disabled={!isFormValid || loading}
               sx={{
-                bgcolor: "#1e3c72",
-                "&:hover": { bgcolor: "#2a5298" },
                 py: 1.5,
-                fontSize: "1.1rem",
                 fontWeight: 600,
+                fontSize: "1rem",
+                borderRadius: 3,
+                background: "linear-gradient(135deg, #1e3c72, #2a5298)",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+                "&:hover": {
+                  transform: "scale(1.03)",
+                },
               }}
             >
               Sign Up
             </Button>
 
-            {/* Box below password for existing users to login */}
-            <Paper
-              variant="outlined"
-              sx={{
-                mt: 1,
-                p: 2,
-                textAlign: "center",
-                borderRadius: 1.5,
-              }}
-            >
-              <Typography variant="body2" sx={{ mb: 1 }}>
+            {/* LOGIN BOX */}
+            <Box textAlign="center">
+              <Typography sx={{ opacity: 0.7, fontSize: "0.9rem" }}>
                 Already have an account?
               </Typography>
+
               <Button
-                variant="text"
-                size="small"
                 startIcon={<LoginIcon />}
                 onClick={() => navigate("/login")}
-                sx={{ fontWeight: 600, color: "#1e3c72" }}
+                sx={{
+                  mt: 1,
+                  color: "#90caf9",
+                  fontWeight: 600,
+                }}
               >
                 Login
               </Button>
-            </Paper>
+            </Box>
           </Stack>
         </Paper>
       </Container>
@@ -274,4 +273,3 @@ function Signup() {
 }
 
 export default Signup;
-
