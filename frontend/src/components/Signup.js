@@ -35,18 +35,7 @@ function Signup() {
     if (value.length < 8) {
       errors.push("at least 8 characters");
     }
-    if (!/[A-Z]/.test(value)) {
-      errors.push("one uppercase letter");
-    }
-    if (!/[a-z]/.test(value)) {
-      errors.push("one lowercase letter");
-    }
-    if (!/[0-9]/.test(value)) {
-      errors.push("one number");
-    }
-    if (!/[^A-Za-z0-9]/.test(value)) {
-      errors.push("one special character");
-    }
+    
 
     if (errors.length === 0) {
       setPasswordError("");
@@ -90,7 +79,7 @@ function Signup() {
         // Response wasn't JSON (e.g. 500 HTML)
       }
       if (res.ok || res.status === 201) {
-        navigate("/login");
+        navigate(data.role === "hr" ? "/hr" : "/student");
         return;
       }
       setError(data.message || "Signup failed. Please try again.");

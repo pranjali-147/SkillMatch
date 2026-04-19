@@ -9,6 +9,12 @@ MONGODB_URI = "mongodb+srv://nysajoy05_db_user:IoSlorHPExPNLsu8@cluster0.m5r2nr4
 
 _client = None
 
+def get_selected_candidates_collection():
+    """Get the SelectedCandidates collection."""
+    db = get_db()
+    collection = db["SelectedCandidates"]
+    return collection
+
 
 def get_db():
     """Get the SkillMatch database. Creates connection on first call."""

@@ -7,14 +7,18 @@ jd_bp = Blueprint("jd", __name__)
 
 
 def _next_id(collection):
-    """Get next integer id for a new job description."""
     doc = collection.find_one(sort=[("id", -1)])
     return (doc["id"] + 1) if doc else 1
 
 
-# -------------------------------
-# GET JDS (filtered by HR email for HR users)
-# -------------------------------
+def _normalize_required_skills(required_skills):
+    if isinstance(required_skills, str):
+        return [s.strip() for s in required_skills.split(",") if s.strip()]
+    if isinstance(required_skills, list):
+        return [str(s).strip() for s in required_skills if str(s).strip()]
+    return []
+
+
 @jd_bp.route("/jds", methods=["GET"])
 def get_job_descriptions():
     try:
@@ -25,7 +29,6 @@ def get_job_descriptions():
         if role == "hr" and hr_email:
             cursor = coll.find({"hr_email": hr_email}, {"_id": 0})
         else:
-            # Students and unauthenticated: return all JDs from MongoDB
             cursor = coll.find({}, {"_id": 0})
 
         jds = list(cursor)
@@ -34,13 +37,11 @@ def get_job_descriptions():
         return jsonify([]), 200
 
 
-# -------------------------------
-# ADD NEW JD
-# -------------------------------
 @jd_bp.route("/jds", methods=["POST"])
 def add_job_description():
     hr_email = session.get("user")
     role = session.get("role")
+
     if role != "hr" or not hr_email:
         return jsonify({"message": "Only HR can add job descriptions"}), 403
 
@@ -48,9 +49,7 @@ def add_job_description():
     if not data:
         return jsonify({"message": "Invalid data"}), 400
 
-    required_skills = data.get("required_skills", [])
-    if isinstance(required_skills, str):
-        required_skills = [s.strip() for s in required_skills.split(",") if s.strip()]
+    required_skills = _normalize_required_skills(data.get("required_skills", []))
 
     try:
         coll = get_job_descriptions_collection()
@@ -58,8 +57,13 @@ def add_job_description():
 
         new_jd = {
             "id": new_id,
-            "title": data.get("title", ""),
-            "description": data.get("description", ""),
+            "company_name": data.get("company_name", "").strip(),
+            "title": data.get("title", "").strip(),
+            "description": data.get("description", "").strip(),
+            "location": data.get("location", "").strip(),
+            "stipend_salary": data.get("stipend_salary", "").strip(),
+            "employment_type": data.get("employment_type", "").strip(),
+            "experience_level": data.get("experience_level", "").strip(),
             "required_skills": required_skills,
             "hr_email": hr_email,
         }
@@ -67,16 +71,18 @@ def add_job_description():
         coll.insert_one(new_jd)
         return jsonify({"message": "JD added successfully"}), 201
     except (ConnectionError, PyMongoError):
-        return jsonify({"message": "Database error. Could not save job description. Check MongoDB connection."}), 503
+        return jsonify(
+            {
+                "message": "Database error. Could not save job description. Check MongoDB connection."
+            }
+        ), 503
 
 
-# -------------------------------
-# EDIT JD
-# -------------------------------
 @jd_bp.route("/jds/<int:jd_id>", methods=["PUT"])
 def update_job_description(jd_id):
     hr_email = session.get("user")
     role = session.get("role")
+
     if role != "hr" or not hr_email:
         return jsonify({"message": "Only HR can edit job descriptions"}), 403
 
@@ -84,19 +90,26 @@ def update_job_description(jd_id):
     if not data:
         return jsonify({"message": "Invalid data"}), 400
 
+    required_skills = _normalize_required_skills(data.get("required_skills", []))
+
     coll = get_job_descriptions_collection()
     result = coll.update_one(
         {"id": jd_id, "hr_email": hr_email},
         {
             "$set": {
-                "title": data.get("title", ""),
-                "description": data.get("description", ""),
-                "required_skills": data.get("required_skills", []),
+                "company_name": data.get("company_name", "").strip(),
+                "title": data.get("title", "").strip(),
+                "description": data.get("description", "").strip(),
+                "location": data.get("location", "").strip(),
+                "stipend_salary": data.get("stipend_salary", "").strip(),
+                "employment_type": data.get("employment_type", "").strip(),
+                "experience_level": data.get("experience_level", "").strip(),
+                "required_skills": required_skills,
             }
         },
     )
 
-    if result.modified_count == 0:
+    if result.matched_count == 0:
         if coll.find_one({"id": jd_id}) is None:
             return jsonify({"message": "JD not found"}), 404
         return jsonify({"message": "You can only edit your own job descriptions"}), 403
@@ -104,13 +117,11 @@ def update_job_description(jd_id):
     return jsonify({"message": "JD updated successfully"}), 200
 
 
-# -------------------------------
-# DELETE JD
-# -------------------------------
 @jd_bp.route("/jds/<int:jd_id>", methods=["DELETE"])
 def delete_job_description(jd_id):
     hr_email = session.get("user")
     role = session.get("role")
+
     if role != "hr" or not hr_email:
         return jsonify({"message": "Only HR can delete job descriptions"}), 403
 

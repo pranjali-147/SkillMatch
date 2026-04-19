@@ -9,7 +9,7 @@ import {
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import StudentDashboard from "./components/StudentDashboard";
-import MainPage from "./components/MainPage";
+import HomePage from "./components/HomePage";
 import Signup from "./components/Signup";
 
 function App() {
@@ -49,14 +49,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* First page: Signup */}
-        <Route path="/" element={<Signup />} />
+        {/* Landing Page */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Signup */}
         <Route path="/signup" element={<Signup />} />
 
-        {/* Optional: keep main landing page on a separate route */}
-        <Route path="/main" element={<MainPage />} />
-
-        {/* Login Page */}
+        {/* Login */}
         <Route
           path="/login"
           element={
