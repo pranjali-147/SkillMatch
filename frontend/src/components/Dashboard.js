@@ -717,6 +717,25 @@ function Dashboard({ onLogout }) {
                       </Button>
                     </Stack>
                   </Stack>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleNotifySelected(jd.id)}
+                    disabled={!(selectedResumes[jd.id] || []).length}
+                    sx={{
+                      mt: 1,
+                      alignSelf: "center",
+                      borderRadius: "25px",
+                      px: 4,
+                      fontWeight: 600,
+                      color: "#90caf9",
+                      border: "1px solid rgba(144,202,249,0.5)",
+                      "&:hover": {
+                        background: "rgba(144,202,249,0.1)",
+                      },
+                    }}
+                  >
+                    Notify Selected Candidates
+                  </Button>
                 </Paper>
 
                 {filteredResults.map((r, i) => (
